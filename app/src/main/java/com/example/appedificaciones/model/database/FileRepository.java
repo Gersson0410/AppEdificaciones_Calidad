@@ -75,7 +75,7 @@ public class FileRepository {
                 try {
                     assetInStream.close();
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
             }
         }
