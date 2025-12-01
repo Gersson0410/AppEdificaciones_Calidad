@@ -41,7 +41,7 @@
                 android:layout_marginHorizontal="8dp"
                 android:layout_marginVertical="20dp"
                 app:srcCompat="@drawable/search_com"
-                android:tint="@android:color/white"/>
+                app:tint="@android:color/white"/>
 
             <EditText
                 android:id="@+id/searchInput"

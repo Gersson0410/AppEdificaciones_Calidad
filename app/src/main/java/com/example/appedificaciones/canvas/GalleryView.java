@@ -38,16 +38,15 @@ public class GalleryView extends View {
     private final Paint pictureIconTextPaint;
     private float pictureRadius;
     //private float scaleFactor = 1f;
-    private float WIDTH;
-    private float HEIGHT;
-    private final float HORIZONTAL_DOOR = 0f;
-    private final float VERTICAL_DOOR = 90f;
+    private final float WIDTH;
+    private final float HEIGHT;
     private EventViewModel eventViewModel;
 
 
     public GalleryView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
 
+        assert attrs != null;
         String layout_height = attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_height");
         String layout_width = attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_width");
 
@@ -126,6 +125,8 @@ public class GalleryView extends View {
             float x1 = 0;
             float y0 = 0;
             float y1 = 0;
+            float HORIZONTAL_DOOR = 0f;
+            float VERTICAL_DOOR = 90f;
             if (doorEntity.getAngle() == HORIZONTAL_DOOR) {
                 x0 = doorEntity.getX() - doorEntity.getWidth() / 2;
                 x1 = doorEntity.getX() + doorEntity.getWidth() / 2;

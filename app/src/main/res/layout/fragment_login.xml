@@ -17,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/userlogo"
-        android:tint="@color/principal"/>
+        app:tint="@color/principal"/>
 
     <EditText
         android:id="@+id/edtUsuario"

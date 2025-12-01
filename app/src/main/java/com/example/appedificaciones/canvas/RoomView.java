@@ -45,6 +45,7 @@ public class RoomView extends View {
         super(context, attrs);
         this.context = context;
 
+        assert attrs != null;
         String layout_height = attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_height");
         String layout_width = attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_width");
 

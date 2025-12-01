@@ -3,6 +3,7 @@ package com.example.appedificaciones.model.database;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import com.example.appedificaciones.model.ent.DoorEntity;
 import com.example.appedificaciones.model.ent.EdificationEntity;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileRepository {
-     private Context context;
+    private Context context;
 
     // Constructor que recibe un Context
     public FileRepository(Context context) {
@@ -30,9 +31,9 @@ public class FileRepository {
 
     public List<EdificationEntity> getEdificacionesFromTextFile() {
         List<EdificationEntity> edificaciones = new ArrayList<>();
-        try {
-            InputStream inputStream = context.getAssets().open("edificaciones.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        try (InputStream inputStream = context.getAssets().open("edificaciones.txt");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
             StringBuilder jsonBuilder = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -54,11 +55,10 @@ public class FileRepository {
                 edificaciones.add(edification);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("FileRepository textf", "Error get edificaciones from tex file", e);
         }
         return edificaciones;
     }
-
 
 
     public Bitmap getPicture(String filename) {
@@ -69,13 +69,13 @@ public class FileRepository {
             bit = BitmapFactory.decodeStream(assetInStream);
             //img.setImageBitmap(bit);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("FileRepository getpicure", "Error getting picture", e);
         } finally {
             if (assetInStream != null) {
                 try {
                     assetInStream.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e("FileRepository pict", "Error getting picture", e);
                 }
             }
         }
@@ -104,13 +104,13 @@ public class FileRepository {
 
 
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("FileRepository room", "Error getting rooms", e);
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e("FileRepository rooms", "Error getting rooms", e);
                 }
             }
         }
@@ -143,13 +143,13 @@ public class FileRepository {
                 pictures.add(picture);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("file repository pictr", "Error getting pictures", e);
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e("file repository picture", "Error getting pictures", e);
                 }
             }
         }
@@ -158,12 +158,12 @@ public class FileRepository {
     }
 
     public List<VertexEntity> getVertexes(String[] filenames) {
-        BufferedReader reader = null;
         List<VertexEntity> vertexEntityList = new ArrayList<>();
-        try {
-            for (String filename : filenames) {
-                reader = new BufferedReader(
-                        new InputStreamReader(context.getAssets().open(filename)));
+
+        for (String filename : filenames) {
+            // Use try-with-resources for each file
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(context.getAssets().open(filename)))) {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -174,20 +174,11 @@ public class FileRepository {
                             Float.parseFloat(vertex[2]),
                             Float.parseFloat(vertex[3])
                     );
-
                     vertexEntityList.add(vertexEntity);
                 }
-            }
+            } catch (IOException e) {
+                Log.e("file repository verte", "Error getting vertexes", e);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
 
@@ -214,13 +205,15 @@ public class FileRepository {
                 doors.add(doorEntity);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("file repository door", "Error getting doors", e);
+
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e("file repository doors", "Error getting doors", e);
+
                 }
             }
         }

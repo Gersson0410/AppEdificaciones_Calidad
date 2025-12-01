@@ -39,7 +39,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.appedificaciones.AudioPlayerService;
 import com.example.appedificaciones.ImageUtils;
+
 import android.Manifest;
+
 import com.example.appedificaciones.R;
 import com.example.appedificaciones.SharedViewModel;
 import com.example.appedificaciones.model.ent.EdificationEntity;
@@ -49,17 +51,21 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import android.location.Address;
 import android.location.Geocoder;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
 import android.util.Log;
 import android.content.pm.PackageManager;
+
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+
 import android.location.Location;
 import android.widget.Toast;
 
@@ -113,7 +119,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
     private RecyclerView recyclerViewComentarios;
     private List<String> comentarios;
 
-    private ImageButton btnPlay,btnPause, btnStop;
+    private ImageButton btnPlay, btnPause, btnStop;
     private SeekBar seekBar;
     private TextView passTimeTextView;
     private TextView dueTimeTextView;
@@ -186,7 +192,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
         seekBar.setMax(100);  // Asumimos que el máximo es 100
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
                     // Si el usuario mueve el SeekBar, cambia la posición del audio
                     Intent intent = new Intent(requireContext(), AudioPlayerService.class);
@@ -286,7 +292,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
     }
 
     private void controlAudio(String action) {
-        if (action.equals("PLAY")){
+        if (action.equals("PLAY")) {
             isPlaying = true;
         } else if (action.equals("STOP") || action.equals("PAUSE")) {
             isPlaying = false;
@@ -325,11 +331,9 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
         ComentariosEdificacion comentariosEdificacion = new ComentariosEdificacion();
         comentariosEdificacion.setComentarios(new ArrayList<>()); // Inicializamos la lista de comentarios
 
-        try {
-            // Verificar si el archivo existe
-            FileInputStream fis = requireContext().openFileInput(nombreArchivo);
-            InputStreamReader isr = new InputStreamReader(fis);
-            BufferedReader reader = new BufferedReader(isr);
+        try (FileInputStream fis = requireContext().openFileInput(nombreArchivo);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader reader = new BufferedReader(isr)) {
 
             StringBuilder stringBuilder = new StringBuilder();
             String linea;
@@ -364,7 +368,8 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
             comentariosEdificacion.setEdificacion(tituloEdificacion);
             guardarComentarios(comentariosEdificacion);  // Inicializar archivo si no existe
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("EdificationDetailFragment", "Error getting comentarios", e);
+
         }
 
         return comentariosEdificacion;
@@ -387,7 +392,8 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
             writer.write(json);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("EdificationDetailFragment", "Error save comentarios", e);
+
         }
     }
 
@@ -592,6 +598,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
         cargarComentarios();  // Recargar los comentarios cada vez que el fragmento se haga visible
 
     }
+
     @Override
     public void onPause() {
         super.onPause();
@@ -602,7 +609,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
     public void onStop() {
         super.onStop();
         Log.d("DETAIL", "onStop: EL FRAGMENT ESTA EN STOP");
-        if(!isStoppedApp){
+        if (!isStoppedApp) {
             Intent intent = new Intent(requireContext(), AudioPlayerService.class);
             intent.putExtra("audio", getArguments().getString(ARG_AUDIO));
             intent.setAction("STOP");
@@ -625,7 +632,7 @@ public class EdificacionDetailFragment extends Fragment implements OnMapReadyCal
         requireActivity().getLifecycle().addObserver(new DefaultLifecycleObserver() {
             @Override
             public void onResume(@NonNull LifecycleOwner owner) {
-                if(isPlaying ){
+                if (isPlaying) {
                     isStoppedApp = false;
                     Intent intent = new Intent(requireContext(), AudioPlayerService.class);
                     intent.putExtra("audio", getArguments().getString(ARG_AUDIO));

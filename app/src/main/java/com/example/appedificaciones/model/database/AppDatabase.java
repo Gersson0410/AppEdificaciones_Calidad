@@ -42,20 +42,27 @@ public abstract class AppDatabase extends RoomDatabase {
 
 
     public abstract UserDao userDao();
+
     public abstract EdificationDao edificationDao();
+
     public abstract FavoriteDao favoriteDao();
+
     public abstract RoomDao roomVertexDao();
+
     public abstract VertexDao vertexDao();
 
     public abstract PictureDao pictureDao();
+
     public abstract DoorDao doorDao();
 
     private static AppDatabase INSTANCE = null;
+    private static final Object LOCK = new Object(); // Objeto para sincronización
 
-    public static AppDatabase getInstance(Context context){
-        synchronized (context){
+
+    public static AppDatabase getInstance(Context context) {
+        synchronized (LOCK) {
             AppDatabase instance = INSTANCE;
-            if(instance == null){
+            if (instance == null) {
                 instance = Room.databaseBuilder(
                                 context,
                                 AppDatabase.class,
