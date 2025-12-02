@@ -18,6 +18,9 @@ roomRuntime = "2.6.1"
 roomCompiler = "2.6.1"
 compiler = "5.0.0-rc01"
 media = "1.7.0"
+play-services-maps = "18.0.2"
+volley = "1.2.1"
+glide = "4.11.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -38,6 +41,10 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
 compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "compiler" }
 media = { group = "androidx.media", name = "media", version.ref = "media" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "play-services-maps" }
+volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+# Note: You already have 'compiler' for Glide in your catalog
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

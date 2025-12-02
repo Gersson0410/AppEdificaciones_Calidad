@@ -18,12 +18,21 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 public class AudioPlayerService extends Service {
     private MediaPlayer mediaPlayer;
     private static final String CHANNEL_ID = "AudioPlayerChannel";
+    private static final String TAG = "AudioPlayerService"; // Constant for log tags
     private boolean isForeground = false;
     private Handler handler = new Handler();
     private Runnable updateProgressRunnable;
     private String audio;
     private int lastPosition = 0; // Posición actual del audio
-    private boolean isPause =false;
+    private boolean isPause = false;
+
+    // Action constants
+    private static final String ACTION_PLAY = "PLAY";
+    private static final String ACTION_PAUSE = "PAUSE";
+    private static final String ACTION_STOP = "STOP";
+    private static final String ACTION_START_FOREGROUND = "START_FOREGROUND";
+    private static final String ACTION_STOP_FOREGROUND = "STOP_FOREGROUND";
+    private static final String ACTION_SEEK = "SEEK";
 
     @Override
     public void onCreate() {
@@ -31,94 +40,154 @@ public class AudioPlayerService extends Service {
         // Inicializa el MediaPlayer con un archivo vacío (se cargará dinámicamente más tarde)
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setLooping(false); // No repetir por defecto
-
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent == null) {
+            Log.w(TAG, "onStartCommand: Intent is null");
+            return START_NOT_STICKY;
+        }
+
         String action = intent.getAction();
         audio = intent.getStringExtra("audio");  // Obtener el nombre del archivo de audio desde el Intent
 
         // Verificamos si 'audio' no es null antes de proceder
-        if (audio != null) {
-            String nombreArchivo = audio.split("\\.")[0];  // Eliminar la extensión .mp3 si está presente
-            int resourceId = getResources().getIdentifier(nombreArchivo.toLowerCase().replace(" ", "_"), "raw", getPackageName());
-
-            if ("PLAY".equals(action)) {
-                if (!mediaPlayer.isPlaying() && resourceId != 0) {
-                    //mediaPlayer.reset();
-                    mediaPlayer = MediaPlayer.create(this, resourceId);
-
-                    if (lastPosition > 0) {
-                        mediaPlayer.seekTo(lastPosition); // Reanudar desde la última posición
-                    }
-                    mediaPlayer.start();
-                    // Establecer el OnCompletionListener
-                    mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                        @Override
-                        public void onCompletion(MediaPlayer mp) {
-                            lastPosition = 0; // Reiniciar la posición cuando el audio termine
-                        }
-                    });
-
-                    startProgressUpdate();
-                    isPause = false;
-                } else if (resourceId == 0) {
-                    Log.e("AudioPlayerService", "Archivo de audio no encontrado: " + audio);
-                }
-            }else if ("PAUSE".equals(action)) {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.pause();
-                    lastPosition = mediaPlayer.getCurrentPosition(); // Guardar posición actual
-                    stopProgressUpdate();
-                    isPause = true;
-                }
-            } else if ("STOP".equals(action)) {
-                mediaPlayer.stop();
-                stopSelf(); // Detener el servicio
-                stopProgressUpdate();
-                lastPosition = 0; // Reiniciar la posición
-                isPause = false;
-            } else if ("START_FOREGROUND".equals(action)) {
-                startForegroundService();
-            } else if ("STOP_FOREGROUND".equals(action)) {
-                stopForegroundService();
-            } else if ("SEEK".equals(action)) {
-
-                int seekPosition = intent.getIntExtra("seek_position", 0);
-                Log.d("SEEK", "cambio de posicion "+ seekPosition);
-                lastPosition = seekPosition * mediaPlayer.getDuration() / 100;
-                mediaPlayer.seekTo(seekPosition * mediaPlayer.getDuration() / 100); // Calcular la posición proporcional
-
-            }
-
-        } else {
-            Log.e("AudioPlayerService", "Error: 'audio' no se ha pasado en el Intent.");
+        if (audio == null) {
+            Log.e(TAG, "Error: 'audio' no se ha pasado en el Intent.");
+            return START_NOT_STICKY;
         }
 
-        return START_STICKY;
+        if (action == null) {
+            Log.w(TAG, "onStartCommand: Action is null");
+            return START_NOT_STICKY;
+        }
+
+        boolean handled = handleAction(action, intent);
+
+        if (handled) {
+            // For actions that should keep the service running (PLAY, PAUSE, etc.)
+            if (ACTION_PLAY.equals(action) || ACTION_PAUSE.equals(action) ||
+                    ACTION_START_FOREGROUND.equals(action) || ACTION_SEEK.equals(action)) {
+                return START_STICKY;
+            }
+            // For STOP actions, the service will stop itself
+            else if (ACTION_STOP.equals(action) || ACTION_STOP_FOREGROUND.equals(action)) {
+                return START_NOT_STICKY;
+            }
+        }
+
+        // Default case if action wasn't handled properly
+        return START_NOT_STICKY;
+    }
+
+    private boolean handleAction(String action, Intent intent) {
+        try {
+            if (ACTION_PLAY.equals(action)) {
+                handlePlayAction();
+                return true;
+            } else if (ACTION_PAUSE.equals(action)) {
+                handlePauseAction();
+                return true;
+            } else if (ACTION_STOP.equals(action)) {
+                handleStopAction();
+                return true;
+            } else if (ACTION_START_FOREGROUND.equals(action)) {
+                startForegroundService();
+                return true;
+            } else if (ACTION_STOP_FOREGROUND.equals(action)) {
+                stopForegroundService();
+                return true;
+            } else if (ACTION_SEEK.equals(action)) {
+                handleSeekAction(intent);
+                return true;
+            }
+
+            Log.w(TAG, "Unknown action: " + action);
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling action: " + action, e);
+            return false;
+        }
+    }
+
+    private void handlePlayAction() {
+        if (mediaPlayer.isPlaying()) {
+            return;
+        }
+
+        String nombreArchivo = audio.split("\\.")[0];  // Eliminar la extensión .mp3 si está presente
+        int resourceId = getResources().getIdentifier(nombreArchivo.toLowerCase().replace(" ", "_"), "raw", getPackageName());
+
+        if (resourceId == 0) {
+            Log.e(TAG, "Archivo de audio no encontrado: " + audio);
+            return;
+        }
+
+        mediaPlayer = MediaPlayer.create(this, resourceId);
+
+        if (lastPosition > 0) {
+            mediaPlayer.seekTo(lastPosition); // Reanudar desde la última posición
+        }
+
+        mediaPlayer.start();
+        setupCompletionListener();
+        startProgressUpdate();
+        isPause = false;
+    }
+
+    private void setupCompletionListener() {
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                lastPosition = 0; // Reiniciar la posición cuando el audio termine
+            }
+        });
+    }
+
+    private void handlePauseAction() {
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            lastPosition = mediaPlayer.getCurrentPosition(); // Guardar posición actual
+            stopProgressUpdate();
+            isPause = true;
+        }
+    }
+
+    private void handleStopAction() {
+        mediaPlayer.stop();
+        stopSelf(); // Detener el servicio
+        stopProgressUpdate();
+        lastPosition = 0; // Reiniciar la posición
+        isPause = false;
+    }
+
+    private void handleSeekAction(Intent intent) {
+        int seekPosition = intent.getIntExtra("seek_position", 0);
+        Log.d("SEEK", "cambio de posicion " + seekPosition);
+        lastPosition = seekPosition * mediaPlayer.getDuration() / 100;
+        mediaPlayer.seekTo(seekPosition * mediaPlayer.getDuration() / 100); // Calcular la posición proporcional
     }
 
     private void startForegroundService() {
         if (!isForeground) {
-            Log.d("AudioPlayerService", "Iniciando servicio en primer plano");
+            Log.d(TAG, "Iniciando servicio en primer plano");
             Notification notification = createNotification();
-
-            startForeground(1,notification);
+            startForeground(1, notification);
             isForeground = true;
         }
     }
 
     private void stopForegroundService() {
         if (isForeground) {
-            Log.d("AudioPlayerService", "Deteniendo servicio en primer plano");
+            Log.d(TAG, "Deteniendo servicio en primer plano");
             stopForeground(true);
             isForeground = false;
         }
     }
 
     private Notification createNotification() {
-        Log.d("AudioPlayerService", "Creando notificación");
+        Log.d(TAG, "Creando notificación");
         Intent notificationIntent = new Intent(this, HomeActivity.class);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -148,13 +217,11 @@ public class AudioPlayerService extends Service {
                 .setContentText("Reproduciendo audio en segundo plano")
                 .setSmallIcon(R.drawable.baseline_audiotrack_24)
                 .setContentIntent(pendingIntent)
-                .addAction(R.drawable.baseline_play_arrow_24, "Play", getActionPendingIntent("PLAY"))
-                .addAction(R.drawable.baseline_pause_24, "Pause", getActionPendingIntent("PAUSE"))
+                .addAction(R.drawable.baseline_play_arrow_24, "Play", getActionPendingIntent(ACTION_PLAY))
+                .addAction(R.drawable.baseline_pause_24, "Pause", getActionPendingIntent(ACTION_PAUSE))
                 .setProgress(100, progress, false)  // Muestra el progreso
                 .build();
     }
-
-
 
     @Override
     public void onDestroy() {
@@ -173,7 +240,6 @@ public class AudioPlayerService extends Service {
     private PendingIntent getActionPendingIntent(String action) {
         Intent actionIntent = new Intent(this, AudioPlayerService.class);
         actionIntent.putExtra("audio", audio);
-
         actionIntent.setAction(action);
         return PendingIntent.getService(
                 this,
@@ -185,7 +251,6 @@ public class AudioPlayerService extends Service {
 
     private void updateNotification() {
         int progress = (mediaPlayer.isPlaying()) ? mediaPlayer.getCurrentPosition() * 100 / mediaPlayer.getDuration() : 0;
-
         Notification notification = createNotification();
         startForeground(1, notification); // Actualiza la notificación
     }
@@ -208,7 +273,7 @@ public class AudioPlayerService extends Service {
 
                     // Enviar los tiempos al MainActivity
                     sendProgressToActivity(progress, passTime, dueTime);
-                    if(isForeground){
+                    if (isForeground) {
                         updateNotification();
                     }
 

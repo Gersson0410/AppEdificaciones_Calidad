@@ -147,6 +147,11 @@ public class CroquisFragment extends Fragment {
         int n = vertices.size();
         boolean inside = false;
 
+        // Verificar que las dimensiones del ImageView y maxX/maxY sean válidas
+        if (image.getWidth() <= 0 || image.getHeight() <= 0 || maxX <= 0 || maxY <= 0) {
+            return false;
+        }
+
         // Ajustar las coordenadas del toque según maxX y maxY para coincidir con el dibujo
         float scaledTouchX = (touchX / image.getWidth()) * maxX;
         float scaledTouchY = (touchY / image.getHeight()) * maxY;
@@ -175,9 +180,7 @@ public class CroquisFragment extends Fragment {
         // Ruta de la carpeta basada en el título de la edificación, eliminando espacios en blanco
         String carpetaEdificacion = tituloEdificacion.replace(" ", "");
 
-        // Intenta cargar el archivo "Rooms.txt" desde la carpeta de la edificación
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(carpetaEdificacion + "/Rooms.txt")));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(carpetaEdificacion + "/Rooms.txt")))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(", ");
@@ -185,7 +188,7 @@ public class CroquisFragment extends Fragment {
                 String name = parts[1];
                 roomNames.put(id, name);
             }
-            reader.close();
+            // No necesitas reader.close() - se cierra automáticamente
         } catch (IOException e) {
             Log.e("CroquisFragment", "Error al cargar Rooms.txt para la edificación: " + carpetaEdificacion, e);
         }
@@ -220,8 +223,7 @@ public class CroquisFragment extends Fragment {
     }
 
     private void loadDoorFile(Context context, String rutaArchivo) {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(rutaArchivo)));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(rutaArchivo)))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
@@ -233,7 +235,7 @@ public class CroquisFragment extends Fragment {
                 // Almacenar los segmentos de la puerta
                 doorSegments.add(new float[]{x1, y1, x2, y2});
             }
-            reader.close();
+            // No necesitas reader.close()
         } catch (IOException e) {
             Log.e("CroquisFragment", "Error al cargar archivo de puertas: " + rutaArchivo, e);
         }
@@ -241,8 +243,7 @@ public class CroquisFragment extends Fragment {
 
 
     private void loadVerticesFile(Context context, String rutaArchivo) {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(rutaArchivo)));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(rutaArchivo)))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
@@ -256,7 +257,7 @@ public class CroquisFragment extends Fragment {
                 }
                 roomVertices.get(roomId).add(new float[]{x, y});
             }
-            reader.close();
+            // No necesitas reader.close()
         } catch (IOException e) {
             Log.e("CroquisFragment", "Error al cargar archivo de vértices: " + rutaArchivo, e);
         }
@@ -266,6 +267,11 @@ public class CroquisFragment extends Fragment {
         // Obtener las dimensiones del ImageView
         int imageViewWidth = image.getWidth();
         int imageViewHeight = image.getHeight();
+
+        // Si el ImageView no tiene dimensiones válidas, salir
+        if (imageViewWidth <= 0 || imageViewHeight <= 0) {
+            return;
+        }
 
         // Crear un Bitmap con las dimensiones del ImageView
         Bitmap bitmap = Bitmap.createBitmap(imageViewWidth, imageViewHeight, Bitmap.Config.ARGB_8888);
@@ -286,6 +292,9 @@ public class CroquisFragment extends Fragment {
                 maxY = Math.max(maxY, vertex[1]);
             }
         }
+        // FIX: Ensure maxX and maxY are not zero to avoid division by zero
+        if (maxX <= 0) maxX = 1;
+        if (maxY <= 0) maxY = 1;
 
         // Dibujar las habitaciones
         for (Map.Entry<Integer, List<float[]>> entry : roomVertices.entrySet()) {

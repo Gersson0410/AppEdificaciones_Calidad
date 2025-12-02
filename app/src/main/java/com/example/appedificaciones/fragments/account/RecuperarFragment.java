@@ -1,6 +1,7 @@
 package com.example.appedificaciones.fragments.account;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,8 +74,7 @@ public class RecuperarFragment extends Fragment {
 
     // Método para validar las credenciales del usuario y devolver la contraseña
     private String validateAccount(String username, String email, String phone) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(accountsFile));
+        try (BufferedReader reader = new BufferedReader(new FileReader(accountsFile))) {
             String line;
             Gson gson = new Gson();
             while ((line = reader.readLine()) != null) {
@@ -89,7 +89,8 @@ public class RecuperarFragment extends Fragment {
             }
             reader.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("RecuperarFragment", "Error validate account", e);
+
         }
         return null; // No se encontró
     }

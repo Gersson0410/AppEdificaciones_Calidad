@@ -66,7 +66,6 @@ public class RoomFragment extends Fragment {
                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                 roomImageView.setImageBitmap(bitmap);
             } catch (IOException e) {
-                e.printStackTrace();
                 Log.e("RoomFragment", "Error al cargar la imagen: " + imageName);
             }
         }
@@ -83,9 +82,8 @@ public class RoomFragment extends Fragment {
                     String path = edificioFolder + "/RoomsData.txt"; // Ruta completa del archivo
                     Log.d("RoomFragment", "Cargando datos desde: " + path);
 
-                    try {
-                        // Abrir el archivo en los assets con codificación UTF-8
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(path), "UTF-8"));
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(context.getAssets().open(path), "UTF-8"))) {
                         String line;
 
                         // Leer cada línea del archivo
@@ -125,7 +123,8 @@ public class RoomFragment extends Fragment {
                         }
                         reader.close(); // Cerrar el BufferedReader
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.e("EdificationDetailFragment", "Error load room data", e);
+
                     }
                 }
             }
